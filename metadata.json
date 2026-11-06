@@ -1,0 +1,6 @@
+{
+  "name": "HabitFlow",
+  "description": "Build Habits. Earn XP. Level Up Your Life. Modern gamified habit tracking with streaks, goals, challenges, and AI insights.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

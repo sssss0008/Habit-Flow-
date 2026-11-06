@@ -1,0 +1,212 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // --- Users Collection ---
+    function isValidUser(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+             data.displayName is string && data.displayName.size() <= 100 &&
+             (!('email' in data) || data.email == null || (data.email is string && data.email.size() <= 150)) &&
+             data.currentLevel is int && data.currentLevel >= 1 &&
+             data.currentXP is int && data.currentXP >= 0 &&
+             data.lifetimeXP is int && data.lifetimeXP >= 0 &&
+             data.currentRank is string && data.currentRank.size() <= 50 &&
+             (!('rewardPoints' in data) || data.rewardPoints is int) &&
+             (!('currentStreak' in data) || data.currentStreak is int) &&
+             (!('longestStreak' in data) || data.longestStreak is int) &&
+             (!('totalCompletedHabits' in data) || data.totalCompletedHabits is int) &&
+             (!('equippedTitle' in data) || data.equippedTitle == null || data.equippedTitle is string) &&
+             (!('equippedBadge' in data) || data.equippedBadge == null || data.equippedBadge is string);
+    }
+
+    match /users/{userId} {
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       request.resource.data.userId == request.auth.uid &&
+                       request.resource.data.createdAt is timestamp &&
+                       request.resource.data.createdAt <= request.time &&
+                       isValidUser(request.resource.data);
+      allow update: if isOwner(userId) &&
+                       isValidUser(request.resource.data) &&
+                       request.resource.data.userId == resource.data.userId &&
+                       request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isOwner(userId);
+
+      // --- Habits Subcollection ---
+      function isValidHabit(data) {
+        return data.habitId is string &&
+               data.userId == userId &&
+               data.title is string && data.title.size() > 0 && data.title.size() <= 100 &&
+               (!('description' in data) || data.description == null || data.description is string) &&
+               data.category is string &&
+               (!('icon' in data) || data.icon is string) &&
+               (!('color' in data) || data.color is string) &&
+               (!('scheduleType' in data) || data.scheduleType is string) &&
+               (!('dailyTarget' in data) || data.dailyTarget is int) &&
+               (!('currentStreak' in data) || data.currentStreak is int) &&
+               (!('longestStreak' in data) || data.longestStreak is int) &&
+               (!('totalCompleted' in data) || data.totalCompleted is int) &&
+               data.isActive is bool &&
+               (!('isArchived' in data) || data.isArchived is bool) &&
+               (!('reminderTime' in data) || data.reminderTime == null || data.reminderTime is string);
+      }
+
+      match /habits/{habitId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) &&
+                         isValidId(habitId) &&
+                         request.resource.data.userId == userId &&
+                         request.resource.data.createdAt is timestamp &&
+                         request.resource.data.createdAt <= request.time &&
+                         isValidHabit(request.resource.data);
+        allow update: if isOwner(userId) &&
+                         isValidHabit(request.resource.data) &&
+                         request.resource.data.userId == resource.data.userId &&
+                         request.resource.data.createdAt == resource.data.createdAt;
+        allow delete: if isOwner(userId);
+      }
+
+      // --- Habit Completions Subcollection ---
+      function isValidCompletion(data) {
+        return data.completionId is string &&
+               data.userId == userId &&
+               data.habitId is string &&
+               data.date is string && data.date.size() <= 20 &&
+               data.completed is bool &&
+               (!('xpAwarded' in data) || data.xpAwarded is int) &&
+               (!('notes' in data) || data.notes == null || data.notes is string);
+      }
+
+      match /completions/{completionId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) &&
+                         isValidId(completionId) &&
+                         request.resource.data.userId == userId &&
+                         request.resource.data.createdAt is timestamp &&
+                         request.resource.data.createdAt <= request.time &&
+                         isValidCompletion(request.resource.data);
+        allow update: if isOwner(userId) &&
+                         isValidCompletion(request.resource.data) &&
+                         request.resource.data.userId == resource.data.userId &&
+                         request.resource.data.createdAt == resource.data.createdAt;
+        allow delete: if isOwner(userId);
+      }
+
+      // --- Goals Subcollection ---
+      function isValidGoal(data) {
+        return data.goalId is string &&
+               data.userId == userId &&
+               data.title is string && data.title.size() > 0 && data.title.size() <= 100 &&
+               (!('description' in data) || data.description == null || data.description is string) &&
+               (!('category' in data) || data.category is string) &&
+               data.targetValue is int &&
+               data.currentValue is int &&
+               (!('targetDate' in data) || data.targetDate == null || data.targetDate is string) &&
+               data.status is string;
+      }
+
+      match /goals/{goalId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) &&
+                         isValidId(goalId) &&
+                         request.resource.data.userId == userId &&
+                         request.resource.data.createdAt is timestamp &&
+                         request.resource.data.createdAt <= request.time &&
+                         isValidGoal(request.resource.data);
+        allow update: if isOwner(userId) &&
+                         isValidGoal(request.resource.data) &&
+                         request.resource.data.userId == resource.data.userId &&
+                         request.resource.data.createdAt == resource.data.createdAt;
+        allow delete: if isOwner(userId);
+      }
+
+      // --- XP Transactions Subcollection ---
+      function isValidXpTransaction(data) {
+        return data.transactionId is string &&
+               data.userId == userId &&
+               data.sourceType is string &&
+               (!('sourceId' in data) || data.sourceId is string) &&
+               data.xpAmount is int &&
+               data.description is string;
+      }
+
+      match /xp_transactions/{transactionId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) &&
+                         isValidId(transactionId) &&
+                         request.resource.data.userId == userId &&
+                         request.resource.data.createdAt is timestamp &&
+                         request.resource.data.createdAt <= request.time &&
+                         isValidXpTransaction(request.resource.data);
+        allow update, delete: if false; // Immutable ledger
+      }
+
+      // --- Challenges Subcollection ---
+      function isValidChallenge(data) {
+        return data.challengeId is string &&
+               data.userId == userId &&
+               data.title is string &&
+               (!('description' in data) || data.description is string) &&
+               data.challengeType is string &&
+               data.targetValue is int &&
+               data.currentProgress is int &&
+               data.xpReward is int &&
+               data.isCompleted is bool &&
+               (!('rewardClaimed' in data) || data.rewardClaimed is bool);
+      }
+
+      match /challenges/{challengeId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) &&
+                         isValidId(challengeId) &&
+                         request.resource.data.userId == userId &&
+                         request.resource.data.createdAt is timestamp &&
+                         request.resource.data.createdAt <= request.time &&
+                         isValidChallenge(request.resource.data);
+        allow update: if isOwner(userId) &&
+                         isValidChallenge(request.resource.data) &&
+                         request.resource.data.userId == resource.data.userId &&
+                         request.resource.data.createdAt == resource.data.createdAt;
+        allow delete: if isOwner(userId);
+      }
+
+      // --- Rewards Subcollection ---
+      function isValidReward(data) {
+        return data.rewardId is string &&
+               data.userId == userId &&
+               data.title is string &&
+               (!('description' in data) || data.description is string) &&
+               data.rewardType is string &&
+               data.cost is int;
+      }
+
+      match /rewards/{rewardId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) &&
+                         isValidId(rewardId) &&
+                         request.resource.data.userId == userId &&
+                         request.resource.data.unlockedAt is timestamp &&
+                         isValidReward(request.resource.data);
+        allow update, delete: if false; // Permanent unlocks
+      }
+    }
+  }
+}

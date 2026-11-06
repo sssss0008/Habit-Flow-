@@ -1,0 +1,166 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Represents an authenticated user profile with stats and XP.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "currentLevel": { "type": "integer" },
+        "currentXP": { "type": "integer" },
+        "lifetimeXP": { "type": "integer" },
+        "currentRank": { "type": "string" },
+        "rewardPoints": { "type": "integer" },
+        "currentStreak": { "type": "integer" },
+        "longestStreak": { "type": "integer" },
+        "totalCompletedHabits": { "type": "integer" },
+        "equippedTitle": { "type": "string" },
+        "equippedBadge": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "displayName", "currentLevel", "currentXP", "lifetimeXP", "currentRank", "createdAt", "updatedAt"]
+    },
+    "Habit": {
+      "title": "Habit",
+      "description": "A habit created and tracked by a user.",
+      "type": "object",
+      "properties": {
+        "habitId": { "type": "string" },
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "category": { "type": "string" },
+        "icon": { "type": "string" },
+        "color": { "type": "string" },
+        "scheduleType": { "type": "string" },
+        "dailyTarget": { "type": "integer" },
+        "currentStreak": { "type": "integer" },
+        "longestStreak": { "type": "integer" },
+        "totalCompleted": { "type": "integer" },
+        "isActive": { "type": "boolean" },
+        "isArchived": { "type": "boolean" },
+        "reminderTime": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["habitId", "userId", "title", "category", "isActive", "createdAt", "updatedAt"]
+    },
+    "HabitCompletion": {
+      "title": "Habit Completion",
+      "description": "Record of a habit marked completed for a specific date.",
+      "type": "object",
+      "properties": {
+        "completionId": { "type": "string" },
+        "userId": { "type": "string" },
+        "habitId": { "type": "string" },
+        "date": { "type": "string" },
+        "completed": { "type": "boolean" },
+        "xpAwarded": { "type": "integer" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["completionId", "userId", "habitId", "date", "completed", "createdAt"]
+    },
+    "Goal": {
+      "title": "Personal Goal",
+      "description": "Short-term or long-term personal milestone.",
+      "type": "object",
+      "properties": {
+        "goalId": { "type": "string" },
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "category": { "type": "string" },
+        "targetValue": { "type": "integer" },
+        "currentValue": { "type": "integer" },
+        "targetDate": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["goalId", "userId", "title", "targetValue", "currentValue", "status", "createdAt", "updatedAt"]
+    },
+    "XpTransaction": {
+      "title": "XP Transaction",
+      "description": "Auditable log of XP earned.",
+      "type": "object",
+      "properties": {
+        "transactionId": { "type": "string" },
+        "userId": { "type": "string" },
+        "sourceType": { "type": "string" },
+        "sourceId": { "type": "string" },
+        "xpAmount": { "type": "integer" },
+        "description": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["transactionId", "userId", "sourceType", "xpAmount", "description", "createdAt"]
+    },
+    "Challenge": {
+      "title": "Challenge",
+      "description": "Daily or weekly challenge for bonus XP.",
+      "type": "object",
+      "properties": {
+        "challengeId": { "type": "string" },
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "challengeType": { "type": "string" },
+        "targetValue": { "type": "integer" },
+        "currentProgress": { "type": "integer" },
+        "xpReward": { "type": "integer" },
+        "isCompleted": { "type": "boolean" },
+        "rewardClaimed": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["challengeId", "userId", "title", "challengeType", "targetValue", "currentProgress", "xpReward", "isCompleted", "createdAt"]
+    },
+    "UserReward": {
+      "title": "User Reward",
+      "description": "Cosmetic or milestone reward unlocked in the shop.",
+      "type": "object",
+      "properties": {
+        "rewardId": { "type": "string" },
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "rewardType": { "type": "string" },
+        "cost": { "type": "integer" },
+        "unlockedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["rewardId", "userId", "title", "rewardType", "cost", "unlockedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile with lifetime XP, level and streak counters."
+    },
+    "/users/{userId}/habits/{habitId}": {
+      "schema": "Habit",
+      "description": "Habits owned by the user."
+    },
+    "/users/{userId}/completions/{completionId}": {
+      "schema": "HabitCompletion",
+      "description": "History of habit completions."
+    },
+    "/users/{userId}/goals/{goalId}": {
+      "schema": "Goal",
+      "description": "Personal goals with target values and milestones."
+    },
+    "/users/{userId}/xp_transactions/{transactionId}": {
+      "schema": "XpTransaction",
+      "description": "Immutable ledger of XP earning events."
+    },
+    "/users/{userId}/challenges/{challengeId}": {
+      "schema": "Challenge",
+      "description": "Daily and weekly challenges."
+    },
+    "/users/{userId}/rewards/{rewardId}": {
+      "schema": "UserReward",
+      "description": "Purchased or earned cosmetic rewards."
+    }
+  }
+}
